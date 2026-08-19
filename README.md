@@ -6,7 +6,7 @@
 Also mirrored on GitLab: https://gitlab.com/phlppgdfry/environmental-sensor-data-platform
 (`.gitlab-ci.yml` runs the same lint/test/build/report pipeline there).
 The generated sample report is published permanently via GitLab Pages:
-https://phlppgdfry.gitlab.io/environmental-sensor-data-platform/
+https://environmental-sensor-data-platform-e2cbb8.gitlab.io/
 
 Production-style Python data platform demonstrating automated sensor
 provisioning, ThingsBoard integration, telemetry processing, data-quality
