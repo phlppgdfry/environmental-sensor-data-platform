@@ -39,6 +39,9 @@ def test_write_and_read_telemetry_against_real_postgres(live_engine):
 
     write_telemetry(long_df, live_engine)
 
+    # Read assertions must happen inside the session: session_scope commits
+    # (which expires attributes) and closes on exit, so touching a mapped
+    # column afterwards raises DetachedInstanceError.
     with session_scope(live_engine) as session:
         rows = (
             session.execute(
@@ -47,8 +50,8 @@ def test_write_and_read_telemetry_against_real_postgres(live_engine):
             .scalars()
             .all()
         )
-    assert len(rows) == 1
-    assert rows[0].value == 12.3
+        assert len(rows) == 1
+        assert rows[0].value == 12.3
 
 
 def test_write_telemetry_upserts_on_conflict(live_engine):

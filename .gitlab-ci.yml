@@ -59,16 +59,18 @@ integration:
     TB_QUEUE_TYPE: in-memory
     INSTALL_TB: "true"
     LOAD_DEMO: "true"
+    JAVA_OPTS: "-Xms256m -Xmx512m" # keep TB's heap small on the shared runner
   before_script:
     - python -m pip install --upgrade pip
     - pip install -e ".[dev]"
   script:
-    # ThingsBoard installs its schema + demo tenant on first boot, which can
-    # take a couple of minutes — poll until it actually answers before
-    # running the tests against it, instead of racing a fixed sleep.
+    # ThingsBoard installs its schema + demo tenant on first boot, which on
+    # a small shared runner (1 vCPU) can take several minutes — poll until
+    # it actually answers before running the tests, instead of racing a
+    # fixed sleep. Bounded at 10 minutes.
     - |
       echo "Waiting for ThingsBoard to finish first-boot install..."
-      for i in $(seq 1 60); do
+      for i in $(seq 1 120); do
         status=$(python -c "
       import urllib.request, urllib.error
       try:
