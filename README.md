@@ -22,6 +22,13 @@ data entry in the ThingsBoard UI:
 
 ![ThingsBoard Cloud dashboard fed by this repo's TelemetryPublisher](docs/screenshots/thingsboard-dashboard.jpg)
 
+The device profile also carries a real alarm rule (`pm25 > 35` → Critical),
+and a customer ("Zeebrugge Port Authority") the dashboard is shared with —
+so the loop from provisioning through alerting to stakeholder reporting is
+fully wired, not just the happy-path telemetry pipeline:
+
+![ThingsBoard Cloud alarm triggered by a pm25 reading pushed from this repo](docs/screenshots/thingsboard-alarm.jpg)
+
 ## Architecture
 
 ```text
