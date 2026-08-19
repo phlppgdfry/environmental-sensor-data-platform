@@ -3,7 +3,10 @@
 [![CI](https://github.com/phlppgdfry/environmental-sensor-data-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/phlppgdfry/environmental-sensor-data-platform/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Also mirrored on GitLab: https://gitlab.com/phlppgdfry/environmental-sensor-data-platform
+Automatically mirrored to GitLab on every push to `main` (via the
+`mirror-to-gitlab` job in `.github/workflows/ci.yml`, authenticated with a
+project-scoped GitLab access token stored as a GitHub Actions secret — no
+manual sync step): https://gitlab.com/phlppgdfry/environmental-sensor-data-platform
 (`.gitlab-ci.yml` runs the same lint/test/build/report pipeline there).
 The generated sample report is published permanently via GitLab Pages:
 https://environmental-sensor-data-platform-e2cbb8.gitlab.io/
