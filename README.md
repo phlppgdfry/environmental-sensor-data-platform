@@ -1,5 +1,8 @@
 # Environmental Sensor Data Platform
 
+[![CI](https://github.com/phlppgdfry/environmental-sensor-data-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/phlppgdfry/environmental-sensor-data-platform/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Production-style Python data platform demonstrating automated sensor
 provisioning, ThingsBoard integration, telemetry processing, data-quality
 validation and environmental reporting — built around a realistic
