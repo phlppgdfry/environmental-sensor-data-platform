@@ -12,6 +12,13 @@ ThingsBoard, telemetry is ingested and validated, and Python scripts produce
 recurring reports and dashboards — all runnable locally via Docker and wired
 into CI (GitLab and GitHub Actions).
 
+`integrations/thingsboard/telemetry.py` was verified against a real
+ThingsBoard Cloud device (not just the mocked test suite) — the widget below
+was populated entirely by this repo's `TelemetryPublisher`, with no manual
+data entry in the ThingsBoard UI:
+
+![ThingsBoard Cloud dashboard fed by this repo's TelemetryPublisher](docs/screenshots/thingsboard-dashboard.jpg)
+
 ## Architecture
 
 ```text
