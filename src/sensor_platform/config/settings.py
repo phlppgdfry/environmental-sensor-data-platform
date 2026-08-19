@@ -6,7 +6,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    database_url: str = "postgresql+psycopg2://sensor_platform:sensor_platform@localhost:5432/sensor_platform"
+    database_url: str = (
+        "postgresql+psycopg2://sensor_platform:sensor_platform@localhost:5432/sensor_platform"
+    )
 
     thingsboard_base_url: str = "http://localhost:8080"
     thingsboard_username: str = "tenant@thingsboard.org"

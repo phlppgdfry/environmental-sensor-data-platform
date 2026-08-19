@@ -3,6 +3,7 @@ stages:
   - test
   - build
   - report
+  - deploy
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -56,5 +57,22 @@ sample_report:
     paths:
       - reports/generated/
     expire_in: 7 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+# Publishes the sample report to GitLab Pages so it has a permanent URL,
+# instead of relying on the 7-day-expiring job artifact from sample_report.
+pages:
+  stage: deploy
+  image: alpine:3.20
+  needs:
+    - sample_report
+  script:
+    - mkdir -p public
+    - cp -r reports/generated/BRUGGE-01/. public/
+    - cp reports/generated/BRUGGE-01/report.html public/index.html
+  artifacts:
+    paths:
+      - public
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

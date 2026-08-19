@@ -63,11 +63,13 @@ def sample_telemetry_df() -> pd.DataFrame:
     )
 
 
-def make_mock_thingsboard_client(handler) -> ThingsBoardClient:
+def make_mock_thingsboard_client(handler, **kwargs) -> ThingsBoardClient:
     transport = httpx.MockTransport(handler)
     return ThingsBoardClient(
         base_url="http://tb.test",
         username="tenant@thingsboard.org",
         password="tenant",
         transport=transport,
+        backoff_base_seconds=0,
+        **kwargs,
     )

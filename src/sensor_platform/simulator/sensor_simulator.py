@@ -75,9 +75,7 @@ def generate_telemetry_frame(assets: pd.DataFrame, config: SimulationConfig) -> 
     ]
 
     offline_sensors = set(
-        assets["sensor_id"].sample(
-            frac=config.offline_sensor_rate, random_state=config.seed
-        )
+        assets["sensor_id"].sample(frac=config.offline_sensor_rate, random_state=config.seed)
     )
 
     records = []

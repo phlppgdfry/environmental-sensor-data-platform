@@ -1,4 +1,8 @@
-import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use("Agg")  # headless: no display available in tests or CI runners
+
+import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go

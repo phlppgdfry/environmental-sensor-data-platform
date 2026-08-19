@@ -99,6 +99,85 @@ def test_expired_token_triggers_relogin():
     assert login_calls == 2
 
 
+def test_request_retries_transient_5xx_then_succeeds():
+    call_count = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal call_count
+        if request.url.path == "/api/auth/login":
+            return httpx.Response(200, json={"token": "fake-jwt"})
+        if request.url.path == "/api/tenant/devices":
+            call_count += 1
+            if call_count < 3:
+                return httpx.Response(503)
+            return httpx.Response(404)
+        raise AssertionError(f"unexpected request: {request.method} {request.url}")
+
+    client = make_mock_thingsboard_client(handler)
+    provisioner = DeviceProvisioner(client)
+
+    result = provisioner.find_by_name("BRUGGE-01:AIR-001")
+
+    assert result is None
+    assert call_count == 3
+
+
+def test_request_gives_up_after_max_retries():
+    call_count = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal call_count
+        if request.url.path == "/api/auth/login":
+            return httpx.Response(200, json={"token": "fake-jwt"})
+        call_count += 1
+        return httpx.Response(503)
+
+    client = make_mock_thingsboard_client(handler, max_retries=2)
+
+    response = client.get("/api/tenant/devices?deviceName=x")
+
+    assert response.status_code == 503
+    assert call_count == 3  # initial attempt + 2 retries
+
+
+def test_request_does_not_retry_client_errors():
+    call_count = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal call_count
+        if request.url.path == "/api/auth/login":
+            return httpx.Response(200, json={"token": "fake-jwt"})
+        call_count += 1
+        return httpx.Response(400)
+
+    client = make_mock_thingsboard_client(handler)
+
+    response = client.get("/api/tenant/devices?deviceName=x")
+
+    assert response.status_code == 400
+    assert call_count == 1
+
+
+def test_request_retries_connection_errors():
+    call_count = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal call_count
+        if request.url.path == "/api/auth/login":
+            return httpx.Response(200, json={"token": "fake-jwt"})
+        call_count += 1
+        if call_count < 2:
+            raise httpx.ConnectError("connection refused", request=request)
+        return httpx.Response(404)
+
+    client = make_mock_thingsboard_client(handler)
+
+    response = client.get("/api/tenant/devices?deviceName=x")
+
+    assert response.status_code == 404
+    assert call_count == 2
+
+
 def test_telemetry_publish_uses_device_token_not_jwt():
     seen_paths = []
 

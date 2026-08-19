@@ -5,6 +5,8 @@
 
 Also mirrored on GitLab: https://gitlab.com/phlppgdfry/environmental-sensor-data-platform
 (`.gitlab-ci.yml` runs the same lint/test/build/report pipeline there).
+The generated sample report is published permanently via GitLab Pages:
+https://phlppgdfry.gitlab.io/environmental-sensor-data-platform/
 
 Production-style Python data platform demonstrating automated sensor
 provisioning, ThingsBoard integration, telemetry processing, data-quality
@@ -73,7 +75,9 @@ both, deliberately, in separate modules:
 - **Management plane** (`integrations/thingsboard/client.py`,
   `devices.py`) — device provisioning and server-side attributes, backed by
   a **JWT bearer token** from `/api/auth/login`. The client auto-refreshes
-  the token and retries once on `401`.
+  the token and retries once on `401`, and separately retries transient
+  connection errors and `429`/`5xx` responses with exponential backoff
+  (4xx client errors are not retried — they won't succeed on repetition).
 - **Device plane** (`integrations/thingsboard/telemetry.py`) — a sensor
   publishing its own telemetry, authenticated with a **per-device access
   token**, no user JWT involved.
@@ -129,6 +133,13 @@ ruff check src tests scripts dashboard
 mypy src
 ```
 
+Install the pre-commit hooks (ruff + mypy run automatically before each
+commit):
+
+```bash
+pre-commit install
+```
+
 ## Data quality & robustness
 
 The simulator deliberately injects the kind of mess real sensor fleets
@@ -166,13 +177,13 @@ python scripts/simulate_sensors.py --sensors 1000 --hours 24 --interval-minutes 
 ## CI/CD
 
 - `.gitlab-ci.yml` — lint (ruff/mypy) -> test (pytest + coverage) -> Docker
-  build -> generates a sample report as a pipeline artifact on the default
-  branch.
-- `.github/workflows/ci.yml` — mirrors the same pipeline for GitHub-hosted
-  review.
+  build -> generates a sample report -> publishes it to GitLab Pages, all on
+  the default branch.
+- `.github/workflows/ci.yml` — mirrors the lint/test/report steps for
+  GitHub-hosted review.
 
 ## Tech stack
 
 Python 3.12 - Pandas - NumPy - Plotly - Matplotlib - Pydantic - httpx -
 SQLAlchemy - PostgreSQL - ThingsBoard - Docker - pytest - ruff - mypy -
-Streamlit - Typer - GitLab CI / GitHub Actions
+pre-commit - Streamlit - Typer - GitLab CI / GitHub Actions / GitLab Pages
