@@ -19,6 +19,9 @@ dependencies = [
     "python-dotenv>=1.0",
     "streamlit>=1.36",
     "pyarrow>=16.1",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "paho-mqtt>=2.1",
 ]
 
 [project.optional-dependencies]
@@ -34,7 +37,10 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --cov=src/sensor_platform --cov-report=term-missing"
+addopts = "-ra --cov=src/sensor_platform --cov-report=term-missing -m 'not integration'"
+markers = [
+    "integration: requires live PostgreSQL and/or ThingsBoard services (see tests/integration/); run with `pytest -m integration`",
+]
 
 [tool.ruff]
 line-length = 100
@@ -42,6 +48,11 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI's dependency-injection idiom requires calling Depends() in
+# argument defaults; that's a false positive for B008 here.
+"src/sensor_platform/api/app.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.12"

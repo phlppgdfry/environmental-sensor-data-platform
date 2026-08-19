@@ -82,8 +82,30 @@ both, deliberately, in separate modules:
   connection errors and `429`/`5xx` responses with exponential backoff
   (4xx client errors are not retried — they won't succeed on repetition).
 - **Device plane** (`integrations/thingsboard/telemetry.py`) — a sensor
-  publishing its own telemetry, authenticated with a **per-device access
-  token**, no user JWT involved.
+  publishing its own telemetry over HTTP, authenticated with a **per-device
+  access token**, no user JWT involved. `integrations/thingsboard/telemetry_mqtt.py`
+  covers the same device plane over **MQTT** instead — the transport a real
+  sensor fleet or gateway is more likely to speak than one-off HTTP POSTs,
+  with a persistent connection and QoS delivery.
+
+## API
+
+`api/app.py` exposes the same analytics layer the dashboard and report
+scripts use, over HTTP (FastAPI):
+
+```bash
+uvicorn sensor_platform.api.app:app --reload
+```
+
+- `GET /projects` — known project IDs
+- `GET /reports/{project_id}` — metric summary + lowest-uptime sensors (404
+  for an unknown project)
+- `GET /anomalies?project_id=&threshold=&limit=` — z-score anomalies,
+  optionally scoped to one project
+
+This is a thin read layer, not a second copy of the logic — it's the
+project moving from "a set of scripts" to "a service" a frontend or another
+system could depend on.
 
 ## Project layout
 
@@ -91,18 +113,20 @@ both, deliberately, in separate modules:
 src/sensor_platform/
     config/            # pydantic-settings, .env driven
     models/            # Device, Project, TelemetryReading (pydantic)
-    imports/           # CSV validation, mapping, idempotent importer
+    imports/           # CSV validation, mapping, streamed idempotent importer
     integrations/
-        thingsboard/   # JWT client, device provisioning, telemetry publisher
+        thingsboard/   # JWT client, device provisioning, HTTP + MQTT telemetry
     ingestion/         # wide->long processing, PostgreSQL pipeline
     analytics/         # aggregation, data quality, anomaly detection
     reporting/         # Plotly/Matplotlib charts, HTML report generator
     simulator/         # synthetic sensor + telemetry generator (load testing)
-    db/                 # SQLAlchemy schema + session
+    db/                # SQLAlchemy schema + session
+    api/               # FastAPI read layer over the analytics functions
 
 scripts/               # CLI entry points (Typer)
 dashboard/              # Streamlit dashboard
-tests/                  # pytest suite (unit tests, no live ThingsBoard needed)
+tests/                  # pytest suite (unit tests, no live services needed)
+tests/integration/      # live PostgreSQL/ThingsBoard tests, see CI/CD below
 ```
 
 ## Quickstart
@@ -163,6 +187,11 @@ CSV import (`imports/csv_importer.py`) and device provisioning
 the same import does not create duplicate devices — existing devices are
 matched by name and only updated when their attributes actually changed.
 
+The import is also **streamed**: `import_assets_csv` reads and provisions
+the CSV in configurable chunks (`--chunk-size`, default 5,000 rows) instead
+of loading the whole file into memory, and still catches a duplicate
+`sensor_id` even when the two copies land in different chunks.
+
 ## Performance
 
 ```text
@@ -179,14 +208,33 @@ python scripts/simulate_sensors.py --sensors 1000 --hours 24 --interval-minutes 
 
 ## CI/CD
 
-- `.gitlab-ci.yml` — lint (ruff/mypy) -> test (pytest + coverage) -> Docker
-  build -> generates a sample report -> publishes it to GitLab Pages, all on
-  the default branch.
-- `.github/workflows/ci.yml` — mirrors the lint/test/report steps for
-  GitHub-hosted review.
+- `.gitlab-ci.yml` — lint (ruff/mypy) -> test (pytest + coverage) -> **live
+  integration tests** -> Docker build -> generates a sample report ->
+  publishes it to GitLab Pages, all on the default branch and on a daily
+  scheduled pipeline (Build > Pipeline schedules) so the published report
+  never goes stale.
+- `.github/workflows/ci.yml` — lint/test/report for GitHub-hosted review,
+  plus a `mirror-to-gitlab` job that keeps the GitLab mirror in sync
+  automatically on every push to `main`.
+
+### Live integration tests
+
+`tests/integration/` runs the same provisioning and telemetry code paths
+against **real** services instead of a mocked HTTP transport: a
+`postgres:16-alpine` service container, and a `thingsboard/tb-postgres`
+service container that installs its schema and demo tenant on first boot.
+They're marked `@pytest.mark.integration`, excluded from the default
+`pytest` run (`-m 'not integration'`), and skip individually if
+`DATABASE_URL` / `THINGSBOARD_BASE_URL` aren't set — so `pytest` locally
+stays fast and hermetic, while CI's `integration` job runs them for real:
+
+```bash
+DATABASE_URL=postgresql+psycopg2://... THINGSBOARD_BASE_URL=http://... pytest -m integration
+```
 
 ## Tech stack
 
 Python 3.12 - Pandas - NumPy - Plotly - Matplotlib - Pydantic - httpx -
-SQLAlchemy - PostgreSQL - ThingsBoard - Docker - pytest - ruff - mypy -
-pre-commit - Streamlit - Typer - GitLab CI / GitHub Actions / GitLab Pages
+FastAPI - paho-mqtt - SQLAlchemy - PostgreSQL - ThingsBoard - Docker -
+pytest - ruff - mypy - pre-commit - Streamlit - Typer - GitLab CI / GitHub
+Actions / GitLab Pages

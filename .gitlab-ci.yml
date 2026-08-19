@@ -1,3 +1,6 @@
+# build, sample_report and pages also run on the daily scheduled pipeline
+# (Build > Pipeline schedules in GitLab), so the published report never goes
+# stale without anyone having to trigger it by hand.
 stages:
   - lint
   - test
@@ -37,6 +40,60 @@ test:
         coverage_format: cobertura
         path: coverage.xml
 
+integration:
+  extends: .python_base
+  stage: test
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+    - name: thingsboard/tb-postgres:3.9.1
+      alias: thingsboard
+  variables:
+    POSTGRES_DB: sensor_platform
+    POSTGRES_USER: sensor_platform
+    POSTGRES_PASSWORD: sensor_platform
+    DATABASE_URL: "postgresql+psycopg2://sensor_platform:sensor_platform@postgres:5432/sensor_platform"
+    THINGSBOARD_BASE_URL: "http://thingsboard:8080"
+    THINGSBOARD_USERNAME: "tenant@thingsboard.org"
+    THINGSBOARD_PASSWORD: "tenant"
+    TB_QUEUE_TYPE: in-memory
+    INSTALL_TB: "true"
+    LOAD_DEMO: "true"
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+  script:
+    # ThingsBoard installs its schema + demo tenant on first boot, which can
+    # take a couple of minutes — poll until it actually answers before
+    # running the tests against it, instead of racing a fixed sleep.
+    - |
+      echo "Waiting for ThingsBoard to finish first-boot install..."
+      for i in $(seq 1 60); do
+        status=$(python -c "
+      import urllib.request, urllib.error
+      try:
+          urllib.request.urlopen('$THINGSBOARD_BASE_URL/api/auth/login', timeout=3)
+      except urllib.error.HTTPError as e:
+          print(e.code)
+      except Exception:
+          print('000')
+      else:
+          print('200')
+      ")
+        if [ "$status" != "000" ]; then
+          echo "ThingsBoard responded with HTTP $status after $((i*5))s"
+          break
+        fi
+        sleep 5
+      done
+    - pytest -m integration -q --no-cov
+  # First-boot bootstrap timing for the ThingsBoard service container is
+  # inherently variable in shared CI runners; don't let a slow boot block
+  # the rest of the pipeline while still surfacing real integration runs.
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_PIPELINE_SOURCE == "schedule"'
+
 build:
   stage: build
   image: docker:26
@@ -45,7 +102,7 @@ build:
   script:
     - docker build -t sensor-platform:$CI_COMMIT_SHORT_SHA .
   rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_PIPELINE_SOURCE == "schedule"'
 
 sample_report:
   extends: .python_base
@@ -58,7 +115,7 @@ sample_report:
       - reports/generated/
     expire_in: 7 days
   rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_PIPELINE_SOURCE == "schedule"'
 
 # Publishes the sample report to GitLab Pages so it has a permanent URL,
 # instead of relying on the 7-day-expiring job artifact from sample_report.
@@ -75,4 +132,4 @@ pages:
     paths:
       - public
   rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_PIPELINE_SOURCE == "schedule"'
