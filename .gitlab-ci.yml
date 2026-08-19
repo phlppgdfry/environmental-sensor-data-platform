@@ -1,0 +1,60 @@
+stages:
+  - lint
+  - test
+  - build
+  - report
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+.python_base:
+  image: python:3.12-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+  cache:
+    key: pip-cache
+    paths:
+      - .cache/pip
+
+lint:
+  extends: .python_base
+  stage: lint
+  script:
+    - ruff check src tests scripts dashboard
+    - mypy src
+
+test:
+  extends: .python_base
+  stage: test
+  script:
+    - pytest --cov=src/sensor_platform --cov-report=xml --cov-report=term-missing
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+build:
+  stage: build
+  image: docker:26
+  services:
+    - docker:26-dind
+  script:
+    - docker build -t sensor-platform:$CI_COMMIT_SHORT_SHA .
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+sample_report:
+  extends: .python_base
+  stage: report
+  script:
+    - python scripts/simulate_sensors.py --sensors 200 --hours 24
+    - python scripts/generate_report.py --project BRUGGE-01
+  artifacts:
+    paths:
+      - reports/generated/
+    expire_in: 7 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

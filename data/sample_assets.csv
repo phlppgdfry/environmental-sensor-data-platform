@@ -1,0 +1,7 @@
+sensor_id,project_id,type,location,latitude,longitude,serial_number
+AIR-001,BRUGGE-01,air_quality,Brugge,51.2093,3.2247,SN93821
+AIR-002,BRUGGE-01,air_quality,Zeebrugge,51.3310,3.2070,SN93822
+WATER-001,COAST-02,water_quality,Knokke,51.3500,3.2667,SN88291
+WATER-002,COAST-02,water_quality,Oostende,51.2154,2.9286,SN88292
+NOISE-001,BRUGGE-01,noise,Brugge,51.2100,3.2260,SN77123
+WEATHER-001,BRUGGE-01,weather,Brugge,51.2080,3.2230,SN66011

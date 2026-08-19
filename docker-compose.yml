@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sensor-platform-postgres
+    environment:
+      POSTGRES_USER: sensor_platform
+      POSTGRES_PASSWORD: sensor_platform
+      POSTGRES_DB: sensor_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sensor_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  thingsboard:
+    image: thingsboard/tb-postgres:3.9.1
+    container_name: sensor-platform-thingsboard
+    ports:
+      - "8080:9090"
+      - "1883:1883"
+      - "7070:7070"
+    environment:
+      TB_QUEUE_TYPE: in-memory
+    volumes:
+      - tb-data:/data
+      - tb-logs:/var/log/thingsboard
+
+volumes:
+  pg-data:
+  tb-data:
+  tb-logs:
