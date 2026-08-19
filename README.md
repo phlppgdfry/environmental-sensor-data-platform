@@ -3,7 +3,7 @@
 [![CI](https://github.com/phlppgdfry/environmental-sensor-data-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/phlppgdfry/environmental-sensor-data-platform/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Also mirrored on GitLab: https://gitlab.com/KippieG/environmental-sensor-data-platform
+Also mirrored on GitLab: https://gitlab.com/phlppgdfry/environmental-sensor-data-platform
 (`.gitlab-ci.yml` runs the same lint/test/build/report pipeline there).
 
 Production-style Python data platform demonstrating automated sensor
