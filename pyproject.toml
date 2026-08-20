@@ -1,6 +1,6 @@
 [project]
 name = "sensor-platform"
-version = "0.2.0"
+version = "0.3.0"
 description = "Production-style Python data platform for environmental sensor provisioning, ThingsBoard integration, telemetry processing, data-quality validation and reporting."
 requires-python = ">=3.12"
 readme = "README.md"

@@ -24,11 +24,17 @@ recurring reports and dashboards — all runnable locally via Docker and wired
 into CI (GitLab and GitHub Actions).
 
 `integrations/thingsboard/telemetry.py` was verified against a real
-ThingsBoard Cloud device (not just the mocked test suite) — the widget below
-was populated entirely by this repo's `TelemetryPublisher`, with no manual
-data entry in the ThingsBoard UI:
+ThingsBoard Cloud tenant (not just the mocked test suite) — every device,
+alarm, dashboard widget, rule chain, calculated field and notification rule
+below was provisioned by this repo's code or its `tb` CLI automation, with
+no manual data entry in the ThingsBoard UI beyond initial widget layout:
 
-![ThingsBoard Cloud dashboard fed by this repo's TelemetryPublisher](docs/screenshots/thingsboard-dashboard.jpg)
+![ThingsBoard Cloud ops dashboard: map, air/water/weather trends and range charts, all fed by this repo's TelemetryPublisher](docs/screenshots/thingsboard-ops-dashboard-overview.jpg)
+
+KPI tiles and an active-alarms table sit below the fold on the same
+dashboard, giving an at-a-glance fleet status next to the historical trends:
+
+![KPI tiles (sensor count, latest PM2.5/temperature/humidity) and the active alarms table](docs/screenshots/thingsboard-ops-dashboard-kpis-alarms.jpg)
 
 The device profile also carries a real alarm rule (`pm25 > 35` → Critical),
 and a customer ("Zeebrugge Port Authority") the dashboard is shared with —
@@ -36,6 +42,34 @@ so the loop from provisioning through alerting to stakeholder reporting is
 fully wired, not just the happy-path telemetry pipeline:
 
 ![ThingsBoard Cloud alarm triggered by a pm25 reading pushed from this repo](docs/screenshots/thingsboard-alarm.jpg)
+
+### ThingsBoard operations beyond telemetry
+
+Past ingesting and displaying data, the tenant is wired up the way a real
+operations deployment would be:
+
+- **Rule engine**: a standalone `Anomaly Webhook Routing` rule chain
+  (`TbJsFilterNode` → `TbRestApiCallNode`) filters incoming telemetry for
+  out-of-range PM2.5, pH or turbidity and forwards the anomalous message to
+  an external webhook — kept separate from the Root Rule Chain so it can be
+  demoed without touching the live save/alarm path.
+- **Calculated Fields**: an `Air Quality Index` SIMPLE calculated field runs
+  server-side on the air quality device, combining `pm25`/`pm10`/`no2` into
+  one derived metric — ThingsBoard's native aggregation alongside this
+  repo's own Python-side analytics.
+- **Notification Center**: a notification rule watches the `High PM2.5`
+  alarm (CRITICAL severity) and pushes an in-app notification to tenant
+  admins — alerting isn't just a red row in a table, it reaches a person.
+- **Entity Groups over "Change owner"**: the sensors and the dashboard live
+  in tenant-owned `Zeebrugge Sensors` / `Zeebrugge Dashboards` entity
+  groups, shared **read-only** with the Zeebrugge Port Authority customer —
+  a scoped, auditable grant instead of transferring entity ownership
+  outright.
+
+All of the above (dashboard widgets, rule chain, calculated field,
+notification rule, entity groups) was provisioned via the `thingsboard-cli`
+(`tb`) and direct REST calls reusing its authenticated client — not the
+ThingsBoard web UI — so it's reproducible from a terminal.
 
 ## Architecture
 
