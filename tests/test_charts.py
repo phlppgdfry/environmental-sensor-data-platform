@@ -43,6 +43,8 @@ def test_plotly_sensor_map_returns_figure():
         ]
     )
     fig = plotly_sensor_map(devices)
+    assert fig.data[0].type == "scattermap"
+    assert fig.layout.map.style == "open-street-map"
     assert isinstance(fig, go.Figure)
     assert len(fig.data) == 1
 

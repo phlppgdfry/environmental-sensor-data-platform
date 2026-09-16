@@ -23,7 +23,7 @@ def plotly_metric_timeseries(long_df: pd.DataFrame, metric: str) -> go.Figure:
 
 
 def plotly_sensor_map(devices: pd.DataFrame) -> go.Figure:
-    fig = px.scatter_mapbox(
+    fig = px.scatter_map(
         devices,
         lat="latitude",
         lon="longitude",
@@ -33,7 +33,7 @@ def plotly_sensor_map(devices: pd.DataFrame) -> go.Figure:
         zoom=7,
         title="Sensor locations",
     )
-    fig.update_layout(mapbox_style="open-street-map", margin={"r": 0, "t": 40, "l": 0, "b": 0})
+    fig.update_layout(map_style="open-street-map", margin={"r": 0, "t": 40, "l": 0, "b": 0})
     return fig
 
 
