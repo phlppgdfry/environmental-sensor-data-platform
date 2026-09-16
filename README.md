@@ -170,6 +170,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
 # spin up PostgreSQL + ThingsBoard locally
+python3 scripts/setup_local_env.py
 docker compose up -d
 
 # generate synthetic assets + telemetry
@@ -272,3 +273,21 @@ Python 3.12 - Pandas - NumPy - Plotly - Matplotlib - Pydantic - httpx -
 FastAPI - paho-mqtt - SQLAlchemy - PostgreSQL - ThingsBoard - Docker -
 pytest - ruff - mypy - pre-commit - Streamlit - Typer - GitLab CI / GitHub
 Actions / GitLab Pages
+
+## Local database credentials
+
+Run `python3 scripts/setup_local_env.py` before starting a new local database. It
+creates a private `.env` with a random password and matching `DATABASE_URL`, and
+refuses to overwrite existing configuration. Docker Compose reads `.env`; for
+Python commands, dbt or Prisma CLI, export it first:
+
+```bash
+set -a
+source .env
+set +a
+```
+
+For an existing PostgreSQL volume, keep its current credentials until you change
+the database role password and update `.env` together. Changing an environment
+variable does not rotate the password stored in PostgreSQL. Never reuse the old
+public demo credentials on a reachable or production database.

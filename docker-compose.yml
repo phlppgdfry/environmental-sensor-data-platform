@@ -4,10 +4,10 @@ services:
     container_name: sensor-platform-postgres
     environment:
       POSTGRES_USER: sensor_platform
-      POSTGRES_PASSWORD: sensor_platform
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run python3 scripts/setup_local_env.py first}
       POSTGRES_DB: sensor_platform
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pg-data:/var/lib/postgresql/data
     healthcheck:
