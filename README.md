@@ -1,5 +1,7 @@
 # Environmental Sensor Data Platform
 
+> **Nederlands leren met deze repo:** [Start de leergids](docs/leren/README.md) — code stap voor stap, vaardigheden, oefeningen met antwoorden, herhaalkaarten en je eigen leerlogboek.
+
 [![CI](https://github.com/phlppgdfry/environmental-sensor-data-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/phlppgdfry/environmental-sensor-data-platform/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
