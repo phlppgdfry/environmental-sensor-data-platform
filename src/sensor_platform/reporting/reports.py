@@ -44,7 +44,7 @@ REPORT_TEMPLATE = """
     </div>
     <div class="stat">
       <div class="value">{{ completeness_pct }}%</div>
-      <div class="label">Data completeness</div>
+      <div class="label">Readings within plausible range</div>
     </div>
     <div class="stat">
       <div class="value">{{ anomaly_count }}</div>
@@ -53,12 +53,16 @@ REPORT_TEMPLATE = """
   </div>
 
   <h2>Metric summary</h2>
+  <p class="meta">Statistics over physically plausible readings only;
+  out-of-range readings are counted under <em>excluded</em>.</p>
   {{ summary_table | safe }}
 
   <h2>Lowest sensor uptime</h2>
   {{ uptime_table | safe }}
 
   <h2>Top anomalies</h2>
+  <p class="meta">The 25 strongest of {{ anomaly_count }} flagged readings;
+  the full list is in anomalies.csv.</p>
   {{ anomalies_table | safe }}
 </body>
 </html>
@@ -85,9 +89,10 @@ def generate_project_report(
     sensor_ids = set(project_devices["sensor_id"])
     project_readings = long_df[long_df["sensor_id"].isin(sensor_ids)]
 
-    summary = project_summary(project_readings, project_devices)
+    summary = project_summary(project_readings, project_devices, valid_only=True)
     quality = build_quality_report(project_readings)
-    anomalies = zscore_anomalies(project_readings).head(25)
+    all_anomalies = zscore_anomalies(project_readings)
+    anomalies = all_anomalies.head(25).copy()
     anomalies["value"] = anomalies["value"].round(2)
     anomalies["zscore"] = anomalies["zscore"].round(2)
 
@@ -99,7 +104,7 @@ def generate_project_report(
         sensor_count=len(sensor_ids),
         total_readings=len(project_readings),
         completeness_pct=quality.completeness_pct,
-        anomaly_count=len(anomalies),
+        anomaly_count=len(all_anomalies),
         summary_table=summary.round(2).to_html(index=False, classes="summary"),
         uptime_table=quality.sensor_uptime.head(10).to_html(index=False, classes="uptime"),
         anomalies_table=anomalies.to_html(index=False, classes="anomalies"),
@@ -111,6 +116,6 @@ def generate_project_report(
 
     html_path.write_text(html, encoding="utf-8")
     summary.to_csv(summary_csv_path, index=False)
-    anomalies.to_csv(anomalies_csv_path, index=False)
+    all_anomalies.round({"value": 2, "zscore": 2}).to_csv(anomalies_csv_path, index=False)
 
     return ReportPaths(html_path, summary_csv_path, anomalies_csv_path)

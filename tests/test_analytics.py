@@ -107,3 +107,26 @@ def test_detect_missing_intervals_finds_gap():
     gaps = detect_missing_intervals(long_df, "AIR-001", "pm25", expected_interval_minutes=15)
     assert len(gaps) == 1
     assert gaps.iloc[0]["gap_minutes"] > 200
+
+
+def test_project_summary_valid_only_excludes_impossible_readings():
+    import pandas as pd
+
+    long_df = pd.DataFrame(
+        {
+            "sensor_id": ["S1", "S1", "S1"],
+            "timestamp": pd.to_datetime(["2026-01-01T00:00Z"] * 3),
+            "metric": ["ph", "ph", "ph"],
+            "value": [7.0, 8.0, 115.0],
+        }
+    )
+    devices = pd.DataFrame({"sensor_id": ["S1"], "project_id": ["P1"]})
+
+    raw = project_summary(long_df, devices)
+    clean = project_summary(long_df, devices, valid_only=True)
+
+    assert raw.loc[0, "max"] == 115.0
+    assert clean.loc[0, "max"] == 8.0
+    assert clean.loc[0, "mean"] == 7.5
+    assert clean.loc[0, "count"] == 2
+    assert clean.loc[0, "excluded"] == 1

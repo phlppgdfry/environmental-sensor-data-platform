@@ -26,6 +26,13 @@ class QualityReport:
     completeness_pct: float
 
 
+def within_bounds(long_df: pd.DataFrame) -> pd.Series:
+    """True for readings inside METRIC_BOUNDS (metrics without bounds count as valid)."""
+    low = long_df["metric"].map(lambda m: METRIC_BOUNDS.get(m, (float("-inf"), float("inf")))[0])
+    high = long_df["metric"].map(lambda m: METRIC_BOUNDS.get(m, (float("-inf"), float("inf")))[1])
+    return long_df["value"].between(low, high)
+
+
 def flag_out_of_range(long_df: pd.DataFrame) -> pd.DataFrame:
     def is_invalid(row: pd.Series) -> bool:
         bounds = METRIC_BOUNDS.get(row["metric"])
